@@ -1,0 +1,12 @@
+notifications:
+  email: false
+branches:
+  only:
+  - master
+language: node_js
+node_js:
+- stable
+script: bash ./build-slides.sh
+env:
+  global:
+  - COMMIT_AUTHOR_EMAIL: tschan+github@puzzle.ch

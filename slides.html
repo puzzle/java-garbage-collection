@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>Java Garbage Collection</title>
+    <link rel="stylesheet" href="./css/reveal.css" />
+    <link rel="stylesheet" href="_assets/theme/puzzle.css" id="theme" />
+    <link rel="stylesheet" href="./css/highlight/zenburn.css" />
+    <link rel="stylesheet" href="./css/print/paper.css" type="text/css" media="print" />
+
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides"><section  data-markdown><script type="text/template">
+
+<!-- .slide: class="master01" -->
+
+# Java<br/>Garbage<br/>Collection
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="master02" -->
+
+# Overview
+
+* -XX:+UseStringDeduplication
+* einem Vergleich dieser inkl. Tradeoffs,
+* die Wichtisten Optionen inkl. Defaults,
+* Auswahlhilfe inkl. Tools,
+* Java GCs in Containern,
+* Allenfalls einige Details zu einem der neueren GCs
+* ZGC 
+* Escape analysis
+* GC Generations
+* Java Ergonomics 
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## What does a GC do?
+
+* Tracks every object in JVM Heap
+* Removes unused objects
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## GC Advantages
+
+* No manual memory allocation
+* No dangling pointers
+* Fewer memory leaks
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## GC Disadvantages
+
+* Additional CPU power required
+* Additional latency and possibly pauses
+* No control over CPU scheduling for freeing memory
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Java 8 Available GCs
+
+* Serial Garbage Collector (default, `-XX:+UseSerialGC`)
+* Parallel Garbage Collector (default, `XX:+UseParallelGC`)
+* CMS Garbage Collector (`-XX:+UseConcMarkSweepGC`)
+* G1 Gargbage Collector (`-XX:+UseG1GC`)
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Java 11 Available GCs
+
+* Serial Garbage Collector (default, `-XX:+UseSerialGC`)
+* Parallel Garbage Collector (`XX:+UseParallelGC`)
+* CMS Garbage Collector (deprecated, `-XX:+UseConcMarkSweepGC`)
+* G1 Gargbage Collector (default, `-XX:+UseG1GC`)
+* Z Garbage Collector (experimental, `-XX:+UseZGC`)
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Summary
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## What's Next
+</script></section></div>
+    </div>
+
+    <script src="./js/reveal.js"></script>
+
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+      // Optional libraries used to extend on reveal.js
+      var deps = [
+        { src: './plugin/markdown/marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+        { src: './plugin/markdown/markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+        { src: './plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+        { src: './plugin/zoom-js/zoom.js', async: true },
+        { src: './plugin/notes/notes.js', async: true },
+        { src: './plugin/math/math.js', async: true }
+      ];
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        dependencies: deps
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal.getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"controlsTutorial":false}, queryOptions);
+    </script>
+
+
+    <script>
+      Reveal.initialize(options);
+    </script>
+  </body>
+</html>
