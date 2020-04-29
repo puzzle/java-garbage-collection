@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-    <title>Java Garbage Collection</title>
+    <title>Modern JVM Garbage Collection</title>
     <link rel="stylesheet" href="./css/reveal.css" />
     <link rel="stylesheet" href="_assets/theme/puzzle.css" id="theme" />
     <link rel="stylesheet" href="./css/highlight/zenburn.css" />
@@ -17,7 +17,16 @@
 
 <!-- .slide: class="master01" -->
 
-# Java<br/>Garbage<br/>Collection
+# Modern<br/>JVM<br/>Garbage<br/>Collection
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="master02" -->
+
+# Overview
+
+* Focus on new GCs in OpenJDK HotSpot
+* Some remarks about containers and GraalVM GC
+
+<!-- Why new gc -->
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="master02" -->
 
@@ -34,49 +43,612 @@
 * GC Generations
 * Java Ergonomics 
 </script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="master02" -->
+# Garbage Collector Theory
+</script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
 ## What does a GC do?
 
 * Tracks every object in JVM Heap
 * Removes unused objects
+
+
+&nbsp; &nbsp; &rArr; Easy?
+</script></section><section  data-markdown><script type="text/template">
+## GC Design Factors
+
+<!-- .slide: class="text-left" -->
+<div class="container">
+
+<div class="col">
+
+* Program throughput
+* GC throughput
+* Heap overhead
+* Pause times
+
+</div>
+<div class="col">
+
+* Pause frequency
+* Pause distribution
+* Allocation performance
+* Compaction
+
+</div>
+</div>
+&nbsp;
+</script></section><section  data-markdown><script type="text/template">
+## GC Design Factors
+
+<!-- .slide: class="text-left" -->
+<div class="container">
+
+<div class="col">
+
+* Concurrency
+* Scaling
+* Tuning
+* Warmup time
+
+</div>
+
+<div class="col">
+
+* Page release
+* Portability
+* Compatibility
+
+</div>
+</div>
+
+&nbsp; &nbsp; &rArr; Very hard, lots of tradeoffs
+
+<small>References: <small>[1]</small></small>
+
+[1]: https://blog.plan99.net/modern-garbage-collection-911ef4f8bd8e
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
-## GC Advantages
+## Generational Hypothesis
 
-* No manual memory allocation
-* No dangling pointers
-* Fewer memory leaks
+* Empirical observation
+* Weak: Most objects die young
+* Strong: The older the object, the less chance it has to die 
+* Notable exception: LRU caches
+
+<small>References: <small>[1]</small></small>
+
+[1]: http://gchandbook.org/
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
-## GC Disadvantages
+## Throughput and Latency
 
-* Additional CPU power required
-* Additional latency and possibly pauses
-* No control over CPU scheduling for freeing memory
+* Throughput: % of time not spent in garbage collection
+* Latency: Responsiveness of an application, affected by GC pauses
+
+<small>References: <small>[1]</small></small>
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/garbage-collector-implementation.html
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
-## Java 8 Available GCs
+## Parallel and Concurrent
 
-* Serial Garbage Collector (default, `-XX:+UseSerialGC`)
-* Parallel Garbage Collector (default, `XX:+UseParallelGC`)
-* CMS Garbage Collector (`-XX:+UseConcMarkSweepGC`)
-* G1 Gargbage Collector (`-XX:+UseG1GC`)
+* Parallel:
+  * All app threads are stopped
+  * Multiple GC threads collect garbage
+* Concurrent: GC runs concurrently with app
+* Modern GCs have parallel and concurrent phases
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="master02" -->
+# OpenJDK HotSpot Garbage Collectors
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
-## Java 11 Available GCs
+## JVM Ergonomics
 
-* Serial Garbage Collector (default, `-XX:+UseSerialGC`)
-* Parallel Garbage Collector (`XX:+UseParallelGC`)
-* CMS Garbage Collector (deprecated, `-XX:+UseConcMarkSweepGC`)
-* G1 Gargbage Collector (default, `-XX:+UseG1GC`)
-* Z Garbage Collector (experimental, `-XX:+UseZGC`)
+<!-- .slide: class="text-left" -->
+* JVM ergonomics selects GC if none specified <small>[1]</small>
+<!-- * Based on architecture, CPU and memory -->
+* Serial GC if 1 CPU or < 1792 MiB RAM <small>[2]</small>
+* OpenJDK < 8u191 not fully aware of containers <small>[3]</small>
+* GCs ergonomics auto-tune low-level params
+
+<small>References: <small>[1]</small></small>
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/ergonomics.html
+[2]: https://blog.oio.de/2020/01/13/high-performance-at-low-cost-choose-the-best-jvm-and-the-best-garbage-collector-for-your-needs/
+[3]: https://merikan.com/2019/04/jvm-in-a-container/
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## OpenJDK 8 Available GCs
+
+| GC         | Option              | Comment |
+| ---------- | ------------------- | ------- |
+| Serial     | -XX:+UseSerialGC        | default |
+| Parallel   | -XX:+UseParallelGC      | default |
+| CMS        | -XX:+UseConcMarkSweepGC | |
+| G1         | -XX:+UseG1GC            | |
+| Shenandoah | -XX:+UseShenandoahGC    | non-mainline backport |
+
+<small>References: <small>[1] [2]</small></small>
+
+[1]: https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/collectors.html
+[2]: https://wiki.openjdk.java.net/display/shenandoah/Main
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## OpenJDK 11 Available GCs
+
+| GC         | Option                    | Comment |
+| ---------- | ------------------------- | ------- |
+| Serial     | -XX:+UseSerialGC        | default |
+| Parallel   | -XX:+UseParallelGC      | |
+| CMS        | -XX:+UseConcMarkSweepGC | deprecated |
+| G1         | -XX:+UseG1GC            | default |
+| Shenandoah | -XX:+UseShenandoahGC    | non-mainline backport |
+| ZGC        | -XX:+UseZGC             | exp., Linux x86_64 only |
+| Epsilon    | -XX:+UseEpsilonGC       | experimental |
+
+<small>References: <small>[1] [2]</small></small>
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/available-collectors.html
+[2]: https://wiki.openjdk.java.net/display/shenandoah/Main
+</script></section><section  data-markdown><script type="text/template">
+Xms no longer desired
+
+Tuning:
+xmx
+pause time goal
+throughput goal
+
+not both
+https://docs.oracle.com/en/java/javase/11/gctuning/ergonomics.html
+run-java.sh
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+
+## GC Concurrency
+
+ <table>
+  <tr>
+    <th></th>
+    <th>Young Generation</th>
+    <th colspan="2">Old Generation</th>
+  </tr>
+  <tr>
+    <td>Parallel</td>
+    <td><span class="redbg">Copy</span></td>
+    <td style="border-right: none"><span class="redbg">Mark</span></td>
+    <td><span class="redbg">Compact<span></td>
+  </tr>
+  <tr>
+    <td>CMS</td>
+    <td><span class="redbg">Copy</span></td>
+    <td style="border-right: none"><span class="greenbg">Conc Mark</span></td>
+    <td><span class="greenbg">Conc Sweep<span></td>
+  </tr>
+  <tr>
+    <td>G1</td>
+    <td><span class="redbg">Copy</span></td>
+    <td style="border-right: none"><span class="greenbg">Conc Mark</span></td>
+    <td><span class="redbg">Compact<span></td>
+  </tr>
+  <tr>
+    <td>Shenandoah</td>
+    <td><span>&mdash;</span></td>
+    <td style="border-right: none"><span class="greenbg">Conc Mark</span></td>
+    <td><span class="greenbg">Conc Compact<span></td>
+  </tr>
+  <tr>
+    <td>ZGC</td>
+    <td><span>&mdash;</span></td>
+    <td style="border-right: none"><span class="greenbg">Conc Mark</span></td>
+    <td><span class="greenbg">Conc Compact<span></td>
+  </tr>
+</table>
+
+<br>
+
+ <table>
+  <tr>
+    <td style="border-right: none"><span class="redbg"></span>&nbsp; Stop-The-World</td>
+    <td><span class="greenbg"></span>&nbsp; Concurrent with application</td>
+  </tr>
+</table>
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Concurrent GCs
+
+* concurent phases: Need to coordinate with application threads
+* Concurrent compaction with load reference barriers
+* Shorter, more predictable pauses
+* Better scalability with large heaps
+* Higher implementation complexity
+* Additional memory overhead
+* Additional cpu overhead (barriers)
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Load (Reference) Barriers
+
+Extra code when object reference is loaded from heap:
+<!-- .element style="margin-bottom: -1.5rem; margin-top: -2rem;" --->
+
+```java
+Object obj2 = obj.field1;  // Loading an object reference from heap
+// Load barrier needed here
+
+Object obj3 = obj2;        // No barrier, not a load from heap
+obj.doSomething();         // No barrier, not a load from heap
+int i = obj.field2;        // No barrier, not an object reference
+```
+
+Optimized for common case
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## G1 improvements in JDK 12
+
+* Abortable mixed collections
+  * G1 can meet the pause time goal more often
+* Promptly return unused committed memory
+  * G1 can return unused heap memory to OS when app is idle
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Page Release
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Epsilon GC
+
+* No-op gc, does not collect garbage at all
+* Useful for:
+  * Measurements
+  * Short living processes
+  * Garbage-free applications
+
+<small>References: <small>[1] [2]</small></small>
+
+[1]: https://blogs.oracle.com/javamagazine/epsilon-the-jdks-do-nothing-garbage-collector
+[2]: https://www.baeldung.com/jvm-epsilon-gc-garbage-collector
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="master02" -->
+# Shenandoah Garbage Collector
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Shenandoah Garbage Collector
+
+* Developed by Red Hat
+* Named after Shenandoah national park
+* Originally based on G1 GC
+* Pause times independent of heap and live-set size
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Shenandoah Garbage Collector
+
+* Single generation, multiple regions
+* Concurrent marking with SATB like G1
+* Concurrent compaction:
+  * v1: brooke pointers, read and write barriers
+  * v2: load barriers and on-heap fwd pointers
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Shenandoah Garbage Collector
+
+* Barrier loop optimizations
+* Multiple heuristics and failure modes
+* Not included in Oracle builds
+
+<small>References: [1] [2] [3] [4] [5] [6]</small>
+
+[1]: https://wiki.openjdk.java.net/display/shenandoah/Main
+[2]: https://shipilev.net/talks/jugbb-Sep2019-shenandoah.pdf
+[3]: https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf
+[4]: https://jaxlondon.com/wp-content/uploads/2019/11/OpenJDK_-_in_the_new_Age_of_concurrent_Garbage_Collectors.pdf
+[5]: https://blog.plan99.net/modern-garbage-collection-part-2
+[6]: https://developers.redhat.com/blog/2019/04/19/not-all-openjdk-12-builds-include-shenandoah-heres-why/
+</script></section><section  data-markdown><script type="text/template">
+## On-Heap Forwarding Pointers
+<!-- .slide: class="text-left" -->
+
+![Shenandoah On-Heap Forwarding Pointers](images/shenandoah_fwd_ptr.svg)  <!-- .element height="125%" width="125%" -->
+
+
+[1]: https://wiki.openjdk.java.net/display/zgc/Main
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Shenandoah Load Barrier
+
+Pseudocode:
+<!-- .element style="margin-bottom: -1.5rem;" --->
+```python
+load_reference_barrier(addr):
+  if in_evac_phase() and in_collection_set(addr) and !is_forwarded(addr):
+    new_addr = copy_object(addr)
+    if cas_fwd_pointer(addr, new_addr):
+      return new_addr
+    else:
+      return get_fwd_pointer(addr)  # Another thread copied object
+```
+
+<small>References: <small>[1] [2]</small></small>
+
+[1]: https://shipilev.net/talks/jugbb-Sep2019-shenandoah.pdf
+[2]: https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="master02" -->
+# Z Garbage Collector
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Z Garbage Collector
+
+* Developed by Oracle, initially proprietary
+* Inspired by patented Azul C4 GC
+* Pause times independent of heap and live-set size
+* Single generation, multiple regions
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Z Garbage Collector
+
+* Concurrent marking and compaction:
+  * Load barriers and colored pointers
+    * 64 bit only
+    * no compressed oops
+  * off-heap forward pointers
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Z Garbage Collector
+
+* Failure modes not documented
+* Windows and MacOS support in JDK 14+
+
+<small><small>References: [1] [2] [3] [4]</small></small>
+
+[1]: https://wiki.openjdk.java.net/display/zgc/Main
+[2]: http://cr.openjdk.java.net/~pliden/slides/ZGC-FOSDEM-2018.pdf
+[3]: https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf
+[4]: https://jaxlondon.com/wp-content/uploads/2019/11/OpenJDK_-_in_the_new_Age_of_concurrent_Garbage_Collectors.pdf
+</script></section><section  data-markdown><script type="text/template">
+## Colored Pointers
+<!-- .slide: class="text-left" -->
+
+![ZGC Colored Pointers](images/zgc_colored_pointers.svg)  <!-- .element height="125%" width="125%" -->
+
+<small>Object address size was changed from 42 to 44 bits in JDK 13 <small>[1]</small></small>
+
+[1]: https://wiki.openjdk.java.net/display/zgc/Main
+</script></section><section  data-markdown><script type="text/template">
+## Heap Multi-Mapping on x86_64
+
+<!-- .slide: class="text-left" -->
+
+![ZGC Heap Multi-Mapping](images/zgc_multi_map.svg)  <!-- .element height="125%" width="125%" -->
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## ZGC Load Barrier
+
+Pseudo code:
+```python
+load_reference_barrier(addr):
+  if color(addr) is bad:
+    return slow_path(addr)  # mark/relocate/remap, depends on gc phase
+```
+
+<small>References: <small>[1] [2]</small></small>
+
+[1]: http://cr.openjdk.java.net/~pliden/slides/ZGC-FOSDEM-2018.pdf
+[2]: https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## GraalVM Native Image
+
+* Little information available
+* Simple generational GC, similar to parallel GC [[1]]
+* Implemented in Java [[1]]
+* Low-latency GC only in enterprise edition [[2]]
+
+[1]: https://blogs.oracle.com/javamagazine/graalvm-native-images-in-containers
+[2]: https://www.graalvm.org/docs/reference-manual/native-image/#low-latency-garbage-collection
+
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="master02" -->
+# Choosing and Tuning GCs
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Notable GC tradeoffs
+
+* Throughput vs latency
+* Throughput vs heap size
+* Latency vs heap size
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## When to use which GC?
+
+| Criteria | GC |
+| -------------------------------------- | -- |
+| Heap &le; 100 MiB                      | Serial |
+| Single CPU, long pauses ok             | Serial       |
+| Maximum throughput, long pauses ok     | Parallel |
+| Minimum latency, reduced throughput ok | Shenandoah or ZGC |
+| Large heap, long pauses not ok         | Shenandoah or ZGC |
+| Slow hardware, long pauses not ok      | Shenandoah (or ZGC?) |
+| Balanced / otherwise                   | G1 |
+
+<small>References: <small>[1] [2]</small></small>
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/available-collectors.html
+[2]: https://shipilev.net/talks/jugbb-Sep2019-shenandoah.pdf
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Garbage Collector Design Goals
+
+| GC         | Throughput | Pause time |
+| ---------- | ---------- | ---------- |
+| Serial     | 99%        | &mdash;    |
+| Parallel   | 99%        | &mdash;    | 
+| G1         | 92%        | 200 ms     |
+| Shenandoah | 85%        | 10 ms      |
+| ZGC        | 85%        | 10 ms      |
+| Epsilon    | 100%       | 0 ms       |
+
+<small><small>List actual values: **-XX:+UnlockDiagnosticVMOptions -XX:+PrintFlagsFinal**</small></small>
+
+<small></small>References: [1] </small></small>
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/parallel-collector1.html
+[2]: https://docs.oracle.com/en/java/javase/11/gctuning/garbage-first-garbage-collector.html
+[3]: https://docs.oracle.com/en/java/javase/11/gctuning/garbage-first-garbage-collector-tuning.html
+[4]: https://wiki.openjdk.java.net/display/shenandoah/Main
+[5]: https://wiki.openjdk.java.net/display/zgc/Main
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Serial GC Tuning
+
+* Throughput goal not met:
+  * Increase heap size <small>[1]</small>
+* Pauses too long:
+  * Choose different GC
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/ergonomics.html
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Parallel GC Tuning
+
+* Throughput goal not met:
+  * Increase heap size <small>[1]</small>
+* Pauses too long:
+  * Set pause-time Goal <small>[1]</small>
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/parallel-collector1.html
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## G1 GC Tuning
+
+* Throughput too low:
+  * Increase heap size <small>[1]</small>
+  * Increase pause-time goal <small>[1]</small>
+* Pauses too long:
+  * Decrease pause-time goal <small>[1]</small>
+  * Disable string deduplication <small>[2]</small>
+
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/garbage-first-garbage-collector-tuning.html
+[2]: https://eng.uber.com/jvm-tuning-garbage-collection/
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## ZGC Tuning
+
+* Set max heap size based on live-set & alloc rate
+* Throughput too low:
+  * Decrease number of GC threads
+* If allocation failures occur:
+  * Increase heap size
+  * Increase GC threads
+
+[1]: https://wiki.openjdk.java.net/display/zgc/Main
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Shenandoah Tuning
+
+* Set max heap size based on live-set & alloc rate <small>[1]</small>
+* If allocation failures occur: <small>[1]</small>
+  * Increase heap size
+  * Change/tune heuristics to run GC sooner
+  * Increase allocator thread pacing delay
+
+[1]: https://wiki.openjdk.java.net/display/shenandoah/Main
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Monitoring GCs
+
+* GCs provide detailed metrics in logs <small>[1]</small>
+* GCs provide partial metrics via MBeans <small>[2] [3]</small>
+* Each GC reports metrics differently
+* Compare with GC logs to find what is reported
+
+[1]: https://www.baeldung.com/java-verbose-gc
+[2]: https://docs.oracle.com/javase/8/docs/jre/api/management/extension/com/sun/management/GarbageCollectorMXBean.html
+[3]: https://docs.oracle.com/javase/8/docs/jre/api/management/extension/com/sun/management/GarbageCollectionNotificationInfo.html
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+## Monitoring GCs
+
+* Use tool like GCViewer to interpret logs <small>[1]</small>
+* Use Micrometer to export metrics to Prometheus <small>[2]</small>
+  * Doesn't fully support concurrent GCs yet <small>[3]</small>
+  * Reports all GC phases, incl. concurrent, as pauses
+
+[1]: https://github.com/chewiebug/GCViewer
+[2]: https://micrometer.io/docs/registry/prometheus
+[3]: https://github.com/micrometer-metrics/micrometer/blob/1.4.x/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/jvm/JvmGcMetrics.java
+</script></section><section  data-markdown><script type="text/template">
+[1]: https://docs.oracle.com/en/java/javase/11/gctuning/garbage-first-garbage-collector-tuning.html
+https://ionutbalosin.com/2019/12/jvm-garbage-collectors-benchmarks-report-19-12/
+</script></section><section  data-markdown><script type="text/template">
+## Micrometer
+
+No Support for Concurrent GCs yet: https://github.com/micrometer-metrics/micrometer/blob/master/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/jvm/JvmGcMetrics.java
+</script></section><section  data-markdown><script type="text/template">
+<!-- .slide: class="text-left" -->
+Finalization is deprecated. Instead use:
+
+* Explicit clean-up method
+* AutoClosable
+* PhantomReference and ReferenceQueue
+
+<small>References: <small>[1]</small></small>
+
+[1]: https://unitstep.net/blog/2018/03/10/java-phantomreferences-a-better-choice-than-finalize/
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
 ## Summary
+
+easygc
+avoid linked-lists, user arrays, hashes
+
+run-java
+Uses and tunes Parallel GC on JVM < 10, defaults otherwise
+https://github.com/fabric8io-images/run-java-sh/blob/master/fish-pepper/run-java-sh/fp-files/run-java.sh
 </script></section><section  data-markdown><script type="text/template">
+jvm-hiccup-meter
+jvm-alloc-meter
+
+Serial:
+
+Copy
+java.lang:type=GarbageCollector,name=Copy
+MarkSweepCompact
+java.lang:type=GarbageCollector,name=MarkSweepCompact
+
+G1
+
+G1 Young Generation
+java.lang:type=GarbageCollector,name=G1 Young Generation
+G1 Old Generation
+java.lang:type=GarbageCollector,name=G1 Old Generation
+
+# HELP jvm_gc_pause_seconds Time spent in GC pause
+# TYPE jvm_gc_pause_seconds summary
+jvm_gc_pause_seconds_count{action="end of minor GC",cause="G1 Evacuation Pause",} 2.0
+jvm_gc_pause_seconds_sum{action="end of minor GC",cause="G1 Evacuation Pause",} 0.035
+# HELP jvm_gc_pause_seconds_max Time spent in GC pause
+# TYPE jvm_gc_pause_seconds_max gauge
+jvm_gc_pause_seconds_max{action="end of minor GC",cause="G1 Evacuation Pause",} 0.029
+
 <!-- .slide: class="text-left" -->
 ## What's Next
-</script></section></div>
+
+* Check references in slides
+* Check some benchmarks <small>[1]</small>
+* Collect GC metrics in your apps
+* Verify and tune GC in your apps
+
+
+
+* http://cr.openjdk.java.net/~pliden/slides/ZGC-FOSDEM-2018.pdf
+* https://www.quora.com/What-are-the-main-differences-between-the-Z-Garbage-Collector-and-the-Shenandoah-Garbage-Collector-in-Java
+* https://blog.plan99.net/modern-garbage-collection-part-2-1c88847abcfd
+* https://blogs.oracle.com/javamagazine/understanding-the-jdks-new-superfast-garbage-collectors
+* https://merikan.com/2019/04/jvm-in-a-container/
+* https://shipilev.net/talks/devoxx-Nov2017-shenandoah.pdf
+* http://clojure-goes-fast.com/blog/shenandoah-in-production/
+* https://ionutbalosin.com/2019/12/jvm-garbage-collectors-benchmarks-report-19-12/
+* https://blogs.oracle.com/javamagazine/graalvm-native-images-in-containers
+* https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf</script></section></div>
     </div>
 
     <script src="./js/reveal.js"></script>
