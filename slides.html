@@ -247,6 +247,10 @@
     <td><span class="greenbg"></span>&nbsp; Concurrent with application</td>
   </tr>
 </table>
+
+<small>References: <small>[1]</small></small>
+
+[1]: https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
 ## Concurrent GCs
@@ -307,8 +311,10 @@
 
 ![Shenandoah On-Heap Forwarding Pointers](images/shenandoah_fwd_ptr.svg)  <!-- .element height="125%" width="125%" -->
 
+<small>References: <small>[1] [2]<small></small>
 
-[1]: https://wiki.openjdk.java.net/display/zgc/Main
+[1]: https://shipilev.net/talks/jugbb-Sep2019-shenandoah.pdf
+[2]: https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
 ## Load (Reference) Barriers
@@ -326,6 +332,10 @@ int i = obj.field2;        // No barrier, not an object reference
 ```
 
 Optimized for common case
+
+<small>References: <small>[1]<small></small>
+
+[1]: http://cr.openjdk.java.net/~pliden/slides/ZGC-FOSDEM-2018.pdf
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
 ## Shenandoah Load Barrier
@@ -394,6 +404,12 @@ load_reference_barrier(addr):
 <!-- .slide: class="text-left" -->
 
 ![ZGC Heap Multi-Mapping](images/zgc_multi_map.svg)  <!-- .element height="125%" width="125%" -->
+
+
+<small>References: <small>[1] [2]</small></small>
+
+[1]: http://cr.openjdk.java.net/~pliden/slides/ZGC-FOSDEM-2018.pdf
+[2]: https://assets.ctfassets.net/oxjq45e8ilak/709UsobBpBGHxaZ0z6MNvH/1d75677b26f1b7c9a71150c372645ad8/100746_367617808_Simone_Bordet_Concurrent_Garbage_collectors_ZGC__Shenandoah.pdf
 </script></section><section  data-markdown><script type="text/template">
 <!-- .slide: class="text-left" -->
 ## ZGC Load Barrier
