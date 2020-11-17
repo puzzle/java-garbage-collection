@@ -1,3 +1,5 @@
 {
-  "controlsTutorial": false
+  "controlsTutorial": false,
+  "transition": "none",
+  "backgroundTransition": "none"
 }
