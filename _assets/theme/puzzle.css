@@ -81,7 +81,7 @@ body {
 
 .reveal strong,
 .reveal b {
-  font-weight: bold; }
+  font-weight: 500; }
 
 .reveal em {
   font-style: italic; }
@@ -113,7 +113,7 @@ body {
   margin-left: 40px; }
 
 .reveal dt {
-  font-weight: bold; }
+  font-weight: 500; }
 
 .reveal dd {
   margin-left: 40px; }
@@ -171,7 +171,7 @@ body {
   border-spacing: 0; }
 
 .reveal table th {
-  font-weight: bold; }
+  font-weight: 500; }
 
 .reveal table th,
 .reveal table td {
@@ -385,7 +385,7 @@ body {
 
 .container{
     display: flex;
-    width: 105%;
+    width: 100%;
 }
 .col{
     flex: 1;
