@@ -310,7 +310,7 @@ title: Modern JVM Garbage Collection
 ## Concurrent GCs
  <!-- .element style="margin-top: -1.5rem;" -->
 
-* Marking and compaction run concurrently
+* All expensive GC phases run concurrent
 * Coordination between GC & app through barriers
 * STW pauses for root set scan and cleanup
 * Pauses are short and predictable
