@@ -751,16 +751,17 @@ load_reference_barrier(addr):
 ## Heap Size
 <!-- .element style="margin-top: -2rem;" --->
 
-* Optimize performance:
+* Optimize performance <small>[1]</small>:
   * Set min heap size = max heap size
   * Enable `-XX:+AlwaysPreTouch`
 * Optimize cost:
   * Select GC with page release
-    * G1 (JDK 12+), Shenandoah or ZGC <small>[1] [2]</small>
+    * G1 (JDK 12+), Shenandoah or ZGC <small>[2] [3]</small>
   * Don't set min heap size
 
-[1]: https://jelastic.com/blog/tuning-garbage-collector-java-memory-usage-optimization/
-[2]: https://www.techrepublic.com/article/java-12-whats-new-in-the-latest-version-of-the-programming-language/
+[1]: https://wiki.openjdk.org/display/shenandoah/Main
+[2]: https://openjdk.org/jeps/346
+[3]: https://jelastic.com/blog/tuning-garbage-collector-java-memory-usage-optimization/
 
 ---
 
